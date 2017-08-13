@@ -1,0 +1,57 @@
+<html>
+
+	<head>
+		<link rel="stylesheet" href="reset.css"></style>
+		<style>
+			html {
+				margin-top: 10px;
+				margin-left: 10px;
+			}
+			#c {
+				/*border:red solid;*/
+				width: 400px;
+				height: 300px;
+			}
+			canvas {
+				width: 100vw;
+				height: 100vh;
+				display: block;
+			}
+			table {
+				font-family: Courier New, Courier, monospace;
+				white-space: nowrap;
+			}
+			td {
+				margin: 0;
+				height: 10pt;
+				border: 1px black solid;
+			}
+			td:hover {
+				background-color: #777;
+				color: white;
+			}
+		</style>
+		<script
+  src="https://code.jquery.com/jquery-3.2.1.min.js"
+  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+  crossorigin="anonymous"></script>
+	</head>
+	
+	<body>
+
+		<canvas id="c">
+		</canvas>
+
+		<input type="range" min="0" max="400" id="mouseX">
+		<input type="range" min="0" max="5" step="0.1" id="time">
+
+		<div style="width: 50%; overflow-x: scroll">
+			<table id="code">
+			</table>
+		</div>
+
+		<script src="a.js"></script>
+
+	</body>
+
+</html>
