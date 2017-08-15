@@ -3,19 +3,23 @@
 	<head>
 		<link rel="stylesheet" href="reset.css"></style>
 		<style>
-			html {
+			body {
 				margin-top: 10px;
 				margin-left: 10px;
 			}
-			#c {
+			#preview {
 				/*border:red solid;*/
-				width: 400px;
+				width: 300px;
 				height: 300px;
+			}
+			#varWatch {
+				width: 256px;
+				height: 256px;
 			}
 			canvas {
 				width: 100vw;
 				height: 100vh;
-				display: block;
+				display: inline-block;
 			}
 			table {
 				font-family: Courier New, Courier, monospace;
@@ -30,6 +34,9 @@
 				background-color: #777;
 				color: white;
 			}
+			pre::selection {
+				background:rgba(255, 127, 0, 0.8);
+			}
 		</style>
 		<script
   src="https://code.jquery.com/jquery-3.2.1.min.js"
@@ -39,17 +46,22 @@
 	
 	<body>
 
-		<canvas id="c">
-		</canvas>
+		<canvas id="preview"></canvas>
+		<canvas id="varWatch"></canvas>
+
+		<br>
 
 		<input type="range" min="0" max="400" id="mouseX">
-		<input type="range" min="0" max="5" step="0.1" id="time">
+		<input type="range" min="0" max="5" step="0.01" id="time">
+
+		<br><br>
+		<button id="analyzer_var">hello</button>
+		<br><br>
 
 		<div style="width: 50%; overflow-x: scroll">
 			<table id="code">
 			</table>
 		</div>
-
 		<script src="a.js"></script>
 
 	</body>
