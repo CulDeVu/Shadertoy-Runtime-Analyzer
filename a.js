@@ -47,8 +47,8 @@ void main() {
 
 	mainImage(outColor, fragCoord);
 
-	if (abs(fragCoord.x - ANALYZER_MOUSE.x) < 1. ^^
-		abs(iResolution.y - fragCoord.y - ANALYZER_MOUSE.y) < 1.)
+	if (abs(fragCoord.x - ANALYZER_MOUSE.x) < 2. ^^
+		abs(iResolution.y - fragCoord.y - ANALYZER_MOUSE.y) < 2.)
 	{
 		outColor = mix(outColor, vec4(1,0,0,1), 0.5);
 	}
@@ -56,11 +56,11 @@ void main() {
 
 var varWatchEntryPoint = `
 void main() {
-	vec2 fragCoord = ANALYZER_MOUSE;
+	vec2 fragCoord = vec2(ANALYZER_MOUSE.x, iResolution.y - ANALYZER_MOUSE.y);
 
 	mainImage(outColor, fragCoord);
 
-	outColor = analyzer_output;
+	outColor = analyzer_output + outColor*1.e-30;
 }`
 
 var shadertoyRaw = ""
@@ -112,9 +112,9 @@ function loadImage(gl, url)
 	return tex;
 }
 
-function drawCode()
+function drawCode(source)
 {
-	var arr = fragmentShaderSource.split("\n");
+	var arr = source.split("\n");
 	//var s = "if(int(gl_FragCoord.x+0.5)==counter){analyzer_output.xyz=sorigin}counter+=1;"
 	//arr.splice(212, 0, s);
 	for (var i = 0; i < arr.length; ++i) {
@@ -187,12 +187,13 @@ function createTexture(gl, color) {
 	gl.bindTexture(gl.TEXTURE_2D, tex);
 	const level = 0;
 	const internalFormat = gl.RGBA32F;
-	const width = 1;
-	const height = 1;
+	const width = gl.canvas.width;
+	const height = gl.canvas.height;
 	const border = 0;
 	const format = gl.RGBA;
 	const type = gl.FLOAT;
-	const data = new Float32Array(color);
+	const data = new Float32Array(width * height * 4);
+	data.fill(0);
 	gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, width, height, border,
 				  format, type, data);
 	// unless we get `OES_texture_float_linear` we can not filter floating point
@@ -201,12 +202,12 @@ function createTexture(gl, color) {
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 	
 	return tex;
-  }
+}
 
 function init() {
 
 	//var shader_url = "https://www.shadertoy.com/api/v1/shaders/Ml3Gzr?key=Nd8tWz";
-	var shader_url = "example.fs";
+	var shader_url = "sphere_marching.fs";
 	
 	$.ajax({url: shader_url, async:false, cache:false, success: function(result) {
 		//shadertoyRaw = result["Shader"]["renderpass"][0]["code"];
@@ -214,7 +215,7 @@ function init() {
 		fragmentShaderSource = fragmentShaderSource.replace("CODE_HERE", shadertoyRaw);
 	}});
 
-	drawCode();
+	//drawCode();
 
 	// PREVIEW GL SETUP
 	var preview_canvas = document.getElementById("preview");
@@ -246,11 +247,13 @@ function init() {
 	{
 		var arr = varWatchFragSource.split("\n");
 		//var s = "\t\tif(int(gl_FragCoord.x+0.5)==counter) { analyzer_output.xyz=sorigin; } \ncounter+=1;"
-		var s = "\t\tif(int(gl_FragCoord.x+0.1)==counter) { analyzer_output.xyz=v; } \ncounter+=1;"
-		arr.splice(27, 0, s);
+		//var s = "\t\tif(int(gl_FragCoord.x+0.1)==counter) { analyzer_output.xyz=v; } \ncounter+=1;"
+		var s = "if(int(gl_FragCoord.x+0.1)==counter) { analyzer_output.x=smallestDist; } counter+=1;"
+		arr.splice(209, 0, s);
 		varWatchFragSource = arr.join("\n");
 		console.log(varWatchFragSource);
 	}
+	drawCode(varWatchFragSource);
 	/*var s = "if(int(gl_FragCoord.x+0.5)==counter){analyzer_output.xyz=sorigin}counter+=1;"
 	arr.splice(212, 0, s);*/
 	//var previewFragSource = fragmentShaderSource.replace("ENTRY_POINT_HERE", previewEntryPoint);
@@ -316,7 +319,7 @@ function draw(gl, data)
 
 	gl.bindVertexArray(data.vao);
 
-	gl.uniform2f(data.iResolutionPos, gl.canvas.width, gl.canvas.height);
+	gl.uniform2f(data.iResolutionPos, preview_gl.canvas.width, preview_gl.canvas.height);
 	gl.uniform1f(data.iTimePos, $("#time").val());
 	gl.uniform4f(data.iMousePos, $("#mouseX").val(), 0., 0., 0.);
 
