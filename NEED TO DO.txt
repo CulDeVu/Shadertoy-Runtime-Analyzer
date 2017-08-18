@@ -1,0 +1,14 @@
+
+- Button that will inspect given selection
+  - This will involve destroying and hot-reloading shader program at will
+  - Also, the varWatch and preview data will need to be globally defined
+  - Also, this will make the script more dynamic. It doesn't have to just crash everything on error
+
+- varWatch visualizer
+  - This is the heart of the program, so this needs to get done quickly
+
+- varWatch visualizer extensions
+  - Programable visualizations
+  - 
+  - Maybe gives the option to add a custom ray tracing function to visualize something in the analyzer
+  - Combine classic ray tracing and sphere tracing

@@ -60,7 +60,7 @@ void main() {
 
 	mainImage(outColor, fragCoord);
 
-	outColor = analyzer_output + outColor*1.e-30;
+	outColor = analyzer_output; // + outColor*1.e-30;
 }`
 
 var shadertoyRaw = ""
@@ -112,15 +112,64 @@ function loadImage(gl, url)
 	return tex;
 }
 
+function isAlphanum(c)
+{
+	return (('0' <= c && c <= '9') ||
+		('A' <= c && c <= 'Z') ||
+		('a' <= c && c <= 'z') ||
+		(c == '_'));
+}
+function isWhitespace(c)
+{
+	return (c == ' ' || c == '\n' || c == '\t');
+}
+function goTogether(a, b)
+{
+	if (isAlphanum(a) && isAlphanum(b))
+		return true;
+	else if (a == '/' && b == '/')
+		return true;
+	else if (isWhitespace(a) && isWhitespace(b))
+		return true;
+	else
+		return false;
+}
+function tokenize(s)
+{
+	if (s.length == 0)
+		return [];
+	var ret = []
+	var prev = s[0];
+	ret.push(s[0]);
+
+	for (var i = 1; i < s.length; ++i)
+	{
+		if (goTogether(s[i], prev))
+			ret[ret.length - 1] += s[i]
+		else
+			ret.push(s[i]);
+		prev = s[i];
+	}
+	return ret;
+}
 function drawCode(source)
 {
+	$("#code").html("");
 	var arr = source.split("\n");
-	//var s = "if(int(gl_FragCoord.x+0.5)==counter){analyzer_output.xyz=sorigin}counter+=1;"
-	//arr.splice(212, 0, s);
+
+	console.log(tokenize(arr[3]))
 	for (var i = 0; i < arr.length; ++i) {
-		//arr[i] = arr[i].replace(" ", "&nbsp");
-		//arr[i] = arr[i].replace("\t", "&nbsp &nbsp ");
-		$("#code").append("<tr class='code-row-" + i + "'>  <td><pre>" + i + "</pre></td> <td><pre>" + arr[i] + "</pre></td>  </tr>");
+
+		var s = arr[i];
+		/*var lineArr = tokenize(arr[i]);
+		var s = "";
+		for (var j = 0; j < lineArr.length; ++j) {
+			if (isWhitespace(lineArr[j][0]))
+				s += lineArr[j];
+			else
+				s += "<span class='code_token'>" + lineArr[j] + "</span>";
+		}*/
+		$("#code").append("<tr class='code-row-" + i + "'>  <td><pre>" + i + "</pre></td> <td><pre>" + s + "</pre></td>  </tr>");
 	}
 }
 
@@ -181,6 +230,7 @@ var varWatch_gl;
 var varWatch_data;
 
 var mousePos = { "x":0, "y":0 };
+var selectedToken = null;
 
 function createTexture(gl, color) {
 	const tex = gl.createTexture();
@@ -204,6 +254,26 @@ function createTexture(gl, color) {
 	return tex;
 }
 
+function loadVarWatchSource(linenum, name, components)
+{
+	var varWatchFragSource = fragmentShaderSource.replace("ENTRY_POINT_HERE", varWatchEntryPoint);
+	var arr = varWatchFragSource.split("\n");
+
+	var s = "if(int(gl_FragCoord.x+0.1)==counter) { analyzer_output";
+	if (components == 1)
+		s += ".x";
+	else if (components == 2)
+		s += ".xy";
+	else if (components == 3)
+		s += ".xyz";
+	s += "=" + name + "; } counter+=1;"
+
+	arr.splice(linenum, 0, s);
+	varWatchFragSource = arr.join("\n");
+	//console.log(varWatchFragSource);
+	return varWatchFragSource;
+}
+
 function init() {
 
 	//var shader_url = "https://www.shadertoy.com/api/v1/shaders/Ml3Gzr?key=Nd8tWz";
@@ -215,7 +285,12 @@ function init() {
 		fragmentShaderSource = fragmentShaderSource.replace("CODE_HERE", shadertoyRaw);
 	}});
 
-	//drawCode();
+	$(document).on('click', '.code_token', function() {
+		selectedToken = this;
+		console.log($(this).parents());
+	})
+
+	drawCode(fragmentShaderSource);
 
 	// PREVIEW GL SETUP
 	var preview_canvas = document.getElementById("preview");
@@ -243,20 +318,8 @@ function init() {
 		return;
 	}
 
-	var varWatchFragSource = fragmentShaderSource.replace("ENTRY_POINT_HERE", varWatchEntryPoint);
-	{
-		var arr = varWatchFragSource.split("\n");
-		//var s = "\t\tif(int(gl_FragCoord.x+0.5)==counter) { analyzer_output.xyz=sorigin; } \ncounter+=1;"
-		//var s = "\t\tif(int(gl_FragCoord.x+0.1)==counter) { analyzer_output.xyz=v; } \ncounter+=1;"
-		var s = "if(int(gl_FragCoord.x+0.1)==counter) { analyzer_output.x=smallestDist; } counter+=1;"
-		arr.splice(209, 0, s);
-		varWatchFragSource = arr.join("\n");
-		console.log(varWatchFragSource);
-	}
-	drawCode(varWatchFragSource);
-	/*var s = "if(int(gl_FragCoord.x+0.5)==counter){analyzer_output.xyz=sorigin}counter+=1;"
-	arr.splice(212, 0, s);*/
-	//var previewFragSource = fragmentShaderSource.replace("ENTRY_POINT_HERE", previewEntryPoint);
+	var varWatchFragSource = loadVarWatchSource(209, "smallestDist", 1);
+
 	varWatch_canvas.width = varWatch_canvas.clientWidth;
 	varWatch_canvas.height = varWatch_canvas.clientHeight;
 
@@ -282,15 +345,19 @@ function init() {
 		drawAll();
 	});
 	$("#analyzer_var").on('click', function(e) {
-		console.log("asdfasf");
-		//alert(window.getSelection());
 		analyze_selection();
 	});
 }
 
 function analyze_selection()
 {
-	console.log($(window.getSelection().anchorNode).parents().eq(2).attr("class").split(' '));
+	var compNum = parseInt($("#varWatch_component_num").val());
+	var linenum = parseInt($(window.getSelection().anchorNode).parents().eq(2).attr("class").split(' ')[0].substr(9, 1000));
+	var name = window.getSelection().toString();
+	var newSource = loadVarWatchSource(linenum, name, compNum);
+
+	//drawCode(newSource);
+	varWatch_data = setupResources(varWatch_gl, newSource);
 }
 
 function drawAll()

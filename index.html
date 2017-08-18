@@ -14,8 +14,13 @@
 			}
 			#varWatch {
 				border: red solid;
-				width: 256px;
-				height: 256px;
+				width: 128px;
+				height: 128px;
+			}
+			#varVisualizer {
+				border: red solid;
+				width: 300px;
+				height: 300px;
 			}
 			canvas {
 				width: 100vw;
@@ -38,6 +43,9 @@
 			pre::selection {
 				background:rgba(255, 127, 0, 0.8);
 			}
+			.code_token:hover {
+				border: rgb(255, 127, 0) solid;
+			}
 		</style>
 		<script
   src="https://code.jquery.com/jquery-3.2.1.min.js"
@@ -49,6 +57,7 @@
 
 		<canvas id="preview"></canvas>
 		<canvas id="varWatch"></canvas>
+		<canvas id="varVisualizer"></canvas>
 
 		<br>
 
@@ -57,9 +66,15 @@
 
 		<br><br>
 		<button id="analyzer_var">hello</button>
+		<select id="varWatch_component_num">
+			<option value="1" selected="selected">1 component</option>
+			<option value="2">2 component</option>
+			<option value="3">3 component</option>
+			<option value="4">4 component</option>
+		</select>
 		<br><br>
 
-		<div style="width: 50%; overflow-x: scroll">
+		<div style="width: 50%; height: 500px; overflow-x: scroll">
 			<table id="code">
 			</table>
 		</div>
