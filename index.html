@@ -12,11 +12,6 @@
 				width: 300px;
 				height: 300px;
 			}
-			#varWatch {
-				border: red solid;
-				width: 128px;
-				height: 128px;
-			}
 			#varVisualizer {
 				border: red solid;
 				width: 300px;
@@ -47,16 +42,12 @@
 				border: rgb(255, 127, 0) solid;
 			}
 		</style>
-		<script
-  src="https://code.jquery.com/jquery-3.2.1.min.js"
-  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
-  crossorigin="anonymous"></script>
+		<script src="jquery-3.2.1.min.js"></script>
 	</head>
 	
 	<body>
 
 		<canvas id="preview"></canvas>
-		<canvas id="varWatch"></canvas>
 		<canvas id="varVisualizer"></canvas>
 
 		<br>
@@ -78,7 +69,10 @@
 			<table id="code">
 			</table>
 		</div>
-		<script src="a.js"></script>
+		<script src="utils/gl-matrix.js"></script>
+		<script src="utils/utils.js"></script>
+		<script src="picogl.min.js"></script>
+		<script src="b.js"></script>
 
 	</body>
 

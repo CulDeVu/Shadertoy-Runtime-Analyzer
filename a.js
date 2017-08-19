@@ -112,63 +112,14 @@ function loadImage(gl, url)
 	return tex;
 }
 
-function isAlphanum(c)
-{
-	return (('0' <= c && c <= '9') ||
-		('A' <= c && c <= 'Z') ||
-		('a' <= c && c <= 'z') ||
-		(c == '_'));
-}
-function isWhitespace(c)
-{
-	return (c == ' ' || c == '\n' || c == '\t');
-}
-function goTogether(a, b)
-{
-	if (isAlphanum(a) && isAlphanum(b))
-		return true;
-	else if (a == '/' && b == '/')
-		return true;
-	else if (isWhitespace(a) && isWhitespace(b))
-		return true;
-	else
-		return false;
-}
-function tokenize(s)
-{
-	if (s.length == 0)
-		return [];
-	var ret = []
-	var prev = s[0];
-	ret.push(s[0]);
-
-	for (var i = 1; i < s.length; ++i)
-	{
-		if (goTogether(s[i], prev))
-			ret[ret.length - 1] += s[i]
-		else
-			ret.push(s[i]);
-		prev = s[i];
-	}
-	return ret;
-}
 function drawCode(source)
 {
 	$("#code").html("");
 	var arr = source.split("\n");
 
-	console.log(tokenize(arr[3]))
 	for (var i = 0; i < arr.length; ++i) {
 
 		var s = arr[i];
-		/*var lineArr = tokenize(arr[i]);
-		var s = "";
-		for (var j = 0; j < lineArr.length; ++j) {
-			if (isWhitespace(lineArr[j][0]))
-				s += lineArr[j];
-			else
-				s += "<span class='code_token'>" + lineArr[j] + "</span>";
-		}*/
 		$("#code").append("<tr class='code-row-" + i + "'>  <td><pre>" + i + "</pre></td> <td><pre>" + s + "</pre></td>  </tr>");
 	}
 }
@@ -248,6 +199,7 @@ function createTexture(gl, color) {
 				  format, type, data);
 	// unless we get `OES_texture_float_linear` we can not filter floating point
 	// textures
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 	
@@ -285,10 +237,10 @@ function init() {
 		fragmentShaderSource = fragmentShaderSource.replace("CODE_HERE", shadertoyRaw);
 	}});
 
-	$(document).on('click', '.code_token', function() {
+	/*$(document).on('click', '.code_token', function() {
 		selectedToken = this;
 		console.log($(this).parents());
-	})
+	});*/
 
 	drawCode(fragmentShaderSource);
 
@@ -312,6 +264,8 @@ function init() {
 	if (!varWatch_gl) {
 		return;
 	}
+	//varWatch_gl = preview_gl;
+	//var varWatch_canvas = preview_canvas;
 	const ext = varWatch_gl.getExtension("EXT_color_buffer_float");
 	if (!ext) {
 		alert("need EXT_color_buffer_float to work");
@@ -330,6 +284,8 @@ function init() {
 	varWatch_gl.bindFramebuffer(varWatch_gl.FRAMEBUFFER, fb);
 	varWatch_gl.framebufferTexture2D(varWatch_gl.FRAMEBUFFER, varWatch_gl.COLOR_ATTACHMENT0, varWatch_gl.TEXTURE_2D, fbTex, 0);
 	varWatch_gl.drawBuffers([varWatch_gl.COLOR_ATTACHMENT0]);
+
+	var fbTex_varWatch;
 
 	drawAll();
 

@@ -6,5 +6,5 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         v += vec3(fragCoord.y / iResolution.y, -0.1, 1);
     }
     
-    fragColor = vec4(v.x, v.y, v.z, 1.0);
+    fragColor = vec4(v.x, v.y, v.z, 7.0);
 }

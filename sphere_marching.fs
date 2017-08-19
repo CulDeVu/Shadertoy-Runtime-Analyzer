@@ -200,8 +200,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         aoOrigin += t.x * aoRay;
     }
     
-    float dist = max(0.0, min(0.8, dot(norm, aoOrigin - intersect)));
-    float ao = pow(dist / 0.8, 0.5);
+    float dist = max(0.0, min(0.4, dot(norm, aoOrigin - intersect)));
+    float ao = pow(dist / 0.4, 0.5);
     
     float ambientLight = ambient * ao;
     
