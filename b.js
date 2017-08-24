@@ -100,6 +100,7 @@ function reloadWatchShader()
 
         watch_shader = loadVarWatchSource(linenum + 1, name, compNum);
     }
+    //console.log(watch_shader);
     
     watch_program = app.createProgram(vShader, watch_shader);
     
@@ -222,8 +223,10 @@ var drawAll = function() {
 		
 		analyzer_data = new Float32Array(WATCH_DIM_X * 4);
 		app.gl.readPixels(0, 0, WATCH_DIM_X, 1, app.gl.RGBA, app.gl.FLOAT, analyzer_data);
-		console.log(analyzer_data);
-	}
+		//console.log(analyzer_data);
+    }
+    
+    drawGraph();
 }
 
 // All UI callbacks
@@ -242,12 +245,10 @@ $("#preview").click(function(e) {
     preview_drawCall.uniform("analyzer_mouse", analyzer_mouse);
     watch_drawCall.uniform("analyzer_mouse", analyzer_mouse);
     drawAll();
-    drawGraph();
 });
 $("#analyzer_var").on('click', function(e) {
     reloadWatchShader();
     drawAll();
-    drawGraph();
 });
 
 drawAll();
@@ -261,22 +262,30 @@ function drawGraph()
     if (!ctx)
         console.log(ctx);
 
+    var data = [];
+    for (var i = 0; i < analyzer_data.length; i += 4) {
+        data.push([
+            analyzer_data[i + 0],
+            analyzer_data[i + 1],
+            analyzer_data[i + 2],
+            analyzer_data[i + 3]
+        ]);
+    }
+
     var minH = 0;
     var maxH = 0;
     var maxInd = 0;
-    for (var i = 0; i < analyzer_data.length; i += 4) {
-        if (analyzer_data[i] == 1337) {
+    for (var i = 0; i < data.length; ++i) {
+        if (data[i][0] == 1337) {
             maxInd = i;
             break;
         }
 
-        minH = Math.min(minH, analyzer_data[i]);
-        maxH = Math.max(maxH, analyzer_data[i]);
+        minH = Math.min(minH, data[i][0]);
+        maxH = Math.max(maxH, data[i][0]);
     }
-    console.log(minH);
-    console.log(maxH);
 
-    var hwidth = (maxInd - 4) / 2.0;
+    var hwidth = (maxInd) / 2.0;
     var hheight = (maxH - minH) / 2.0;
 
     function xPos(x) {
@@ -288,17 +297,17 @@ function drawGraph()
 
     ctx.beginPath();
     ctx.moveTo(xPos(0), yPos(0));
-    for (var i = 0; i < maxInd; i += 4) {
-        ctx.lineTo(xPos(i), yPos(analyzer_data[i]));
+    for (var i = 0; i < maxInd; ++i) {
+        ctx.lineTo(xPos(i), yPos(data[i][0]));
     }
-    ctx.lineTo(xPos(maxInd-4), yPos(0));
+    ctx.lineTo(xPos(maxInd-1), yPos(0));
     ctx.closePath();
     ctx.fill();
 
     ctx.fillStyle = "#f00";
-    for (var i = 0; i < maxInd; i += 4) {
+    for (var i = 0; i < maxInd; ++i) {
         var x = xPos(i);
-        var y = yPos(analyzer_data[i]);
+        var y = yPos(data[i][0]);
         ctx.fillRect(x - 3, y - 3, 6, 6);
     }
 }
