@@ -25,7 +25,7 @@ out vec4 outColor;
 // for analyzer purposes
 uniform vec2 analyzer_mouse;
 int analyzer_counter = 0;
-vec4 analyzer_output = vec4(1,3,3,7);
+vec4 analyzer_output = vec4(1337,1337,1337,1337);
 
 CODE_HERE
 
@@ -102,7 +102,7 @@ function reloadWatchShader()
     }
     
     watch_program = app.createProgram(vShader, watch_shader);
-
+    
     watch_drawCall = app.createDrawCall(watch_program, triangleArray)
     .texture("iChannel0", iChannel0Tex)
     .texture("iChannel1", iChannel0Tex)
@@ -127,6 +127,7 @@ var watch_drawCall;
 var shadertoy_uniforms_buf;
 
 var analyzer_mouse = [0, 0];
+var analyzer_data = null;
 
 var shader_url = "sphere_marching.fs";
 
@@ -217,12 +218,11 @@ var drawAll = function() {
     preview_drawCall.draw();
 
     {
-        //varWatch_gl.readBuffer(varWatch_gl.COLOR_ATTACHMENT0);
         app.readFramebuffer(watch_fb);
 		
-		var pixels = new Float32Array(WATCH_DIM_X * 4);
-		app.gl.readPixels(0, 0, WATCH_DIM_X, 1, app.gl.RGBA, app.gl.FLOAT, pixels);
-		console.log(pixels);
+		analyzer_data = new Float32Array(WATCH_DIM_X * 4);
+		app.gl.readPixels(0, 0, WATCH_DIM_X, 1, app.gl.RGBA, app.gl.FLOAT, analyzer_data);
+		console.log(analyzer_data);
 	}
 }
 
@@ -242,14 +242,63 @@ $("#preview").click(function(e) {
     preview_drawCall.uniform("analyzer_mouse", analyzer_mouse);
     watch_drawCall.uniform("analyzer_mouse", analyzer_mouse);
     drawAll();
+    drawGraph();
 });
 $("#analyzer_var").on('click', function(e) {
-    
-	/*var newSource = loadVarWatchSource(linenum, name, compNum);
-
-    varWatch_data = setupResources(varWatch_gl, newSource);*/
     reloadWatchShader();
     drawAll();
+    drawGraph();
 });
 
 drawAll();
+
+function drawGraph()
+{
+    var visual = document.getElementById("varVisualizer");
+    visual.width = visual.clientWidth;
+    visual.height = visual.clientHeight;
+    var ctx = visual.getContext("2d");
+    if (!ctx)
+        console.log(ctx);
+
+    var minH = 0;
+    var maxH = 0;
+    var maxInd = 0;
+    for (var i = 0; i < analyzer_data.length; i += 4) {
+        if (analyzer_data[i] == 1337) {
+            maxInd = i;
+            break;
+        }
+
+        minH = Math.min(minH, analyzer_data[i]);
+        maxH = Math.max(maxH, analyzer_data[i]);
+    }
+    console.log(minH);
+    console.log(maxH);
+
+    var hwidth = (maxInd - 4) / 2.0;
+    var hheight = (maxH - minH) / 2.0;
+
+    function xPos(x) {
+        return (x - hwidth) * visual.width / (2.0 * hwidth*1.2) + visual.width/2.0;
+    }
+    function yPos(y) {
+        return visual.height - ( (y - hheight) * visual.height /  (2.0 * (hheight+0.001)*1.2) + visual.height/2.0 );
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(xPos(0), yPos(0));
+    for (var i = 0; i < maxInd; i += 4) {
+        ctx.lineTo(xPos(i), yPos(analyzer_data[i]));
+    }
+    ctx.lineTo(xPos(maxInd-4), yPos(0));
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = "#f00";
+    for (var i = 0; i < maxInd; i += 4) {
+        var x = xPos(i);
+        var y = yPos(analyzer_data[i]);
+        ctx.fillRect(x - 3, y - 3, 6, 6);
+    }
+}

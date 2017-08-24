@@ -73,7 +73,7 @@ vec3 calcNormal(vec3 pos)
 {
     vec3 eps = vec3( 0.001, 0.0, 0.0 );
     vec3 nor = vec3(
-            findNearest(pos+eps.xyy).x - findNearest(pos-eps.xyy).x,
+        findNearest(pos+eps.xyy).x - findNearest(pos-eps.xyy).x,
         findNearest(pos+eps.yxy).x - findNearest(pos-eps.yxy).x,
         findNearest(pos+eps.yyx).x - findNearest(pos-eps.yyx).x);
     return normalize(nor);
@@ -131,14 +131,14 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     vec2 t;
     for (int i = 0; i < 32; ++i)
     {
-            t = findNearest(origin);
+        t = findNearest(origin);
         origin += t.x * ray;
     }
     
     // didn't hit anything
     if (t.x > 10.0)
     {
-            fragColor = vec4(0, 0, 0, 1);
+        fragColor = vec4(0, 0, 0, 1);
         return;
     }
     
