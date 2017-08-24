@@ -129,6 +129,7 @@ var shadertoy_uniforms_buf;
 
 var analyzer_mouse = [0, 0];
 var analyzer_data = null;
+var analyzer_clickable = [];
 
 var shader_url = "sphere_marching.fs";
 
@@ -250,8 +251,77 @@ $("#analyzer_var").on('click', function(e) {
     reloadWatchShader();
     drawAll();
 });
+$("#varVisualizer").on('mousemove', function(e) {
+    var x = e.pageX - this.offsetLeft;
+    var y = e.pageY - this.offsetTop;
+
+    var best_score = 8000;
+    var best_id = 0;
+    for (var i = 0; i < analyzer_clickable.length; ++i) {
+        var score = Math.pow(analyzer_clickable[i][1] - x, 2) + Math.pow(analyzer_clickable[i][2] - y, 2);
+        if (score < best_score) {
+            best_score = score;
+            best_id = i;
+        }
+    }
+
+    var s = 'Iter ' + best_id + ': (' + 
+        analyzer_data[4 * best_id + 0] + ', ' +
+        analyzer_data[4 * best_id + 1] + ', ' +
+        analyzer_data[4 * best_id + 2] + ', ' +
+        analyzer_data[4 * best_id + 3] + ')';
+    $('#rawVisualizer').html(s);
+})
 
 drawAll();
+
+function drawGraphImp(ctx, data) {
+    var canvas = ctx.canvas;
+
+    var minH = 0;
+    var maxH = 0;
+    var maxInd = 0;
+    for (var i = 0; i < data.length; ++i) {
+        if (data[i][0] == 1337) {
+            maxInd = i;
+            break;
+        }
+
+        minH = Math.min(minH, data[i][0]);
+        maxH = Math.max(maxH, data[i][0]);
+    }
+
+    var hwidth = (maxInd) / 2.0;
+    var hheight = (maxH - minH) / 2.0;
+
+    function xPos(x) {
+        return (x - hwidth) * canvas.width / (2.0 * hwidth*1.2) + canvas.width/2.0;
+    }
+    function yPos(y) {
+        return canvas.height - ( (y - hheight) * canvas.height /  (2.0 * (hheight+0.001)*1.2) + canvas.height/2.0 );
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(xPos(0), yPos(0));
+    for (var i = 0; i < maxInd; ++i) {
+        ctx.lineTo(xPos(i), yPos(data[i][0]));
+    }
+    ctx.lineTo(xPos(maxInd-1), yPos(0));
+    ctx.closePath();
+    ctx.fill();
+
+    clickable = [];
+
+    ctx.fillStyle = "#f00";
+    for (var i = 0; i < maxInd; ++i) {
+        var x = xPos(i);
+        var y = yPos(data[i][0]);
+        ctx.fillRect(x - 3, y - 3, 6, 6);
+        clickable.push([ i, x, y ]);
+    }
+
+    return clickable;
+}
 
 function drawGraph()
 {
@@ -272,42 +342,5 @@ function drawGraph()
         ]);
     }
 
-    var minH = 0;
-    var maxH = 0;
-    var maxInd = 0;
-    for (var i = 0; i < data.length; ++i) {
-        if (data[i][0] == 1337) {
-            maxInd = i;
-            break;
-        }
-
-        minH = Math.min(minH, data[i][0]);
-        maxH = Math.max(maxH, data[i][0]);
-    }
-
-    var hwidth = (maxInd) / 2.0;
-    var hheight = (maxH - minH) / 2.0;
-
-    function xPos(x) {
-        return (x - hwidth) * visual.width / (2.0 * hwidth*1.2) + visual.width/2.0;
-    }
-    function yPos(y) {
-        return visual.height - ( (y - hheight) * visual.height /  (2.0 * (hheight+0.001)*1.2) + visual.height/2.0 );
-    }
-
-    ctx.beginPath();
-    ctx.moveTo(xPos(0), yPos(0));
-    for (var i = 0; i < maxInd; ++i) {
-        ctx.lineTo(xPos(i), yPos(data[i][0]));
-    }
-    ctx.lineTo(xPos(maxInd-1), yPos(0));
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = "#f00";
-    for (var i = 0; i < maxInd; ++i) {
-        var x = xPos(i);
-        var y = yPos(data[i][0]);
-        ctx.fillRect(x - 3, y - 3, 6, 6);
-    }
+    analyzer_clickable = drawGraphImp(ctx, data);
 }
