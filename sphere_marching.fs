@@ -182,7 +182,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     {
         t = findNearest(sorigin);
         
-        float d = clamp(t.x, 0.0, dToLight - dot(sray, sorigin + t.x * sray - intersect));
+        float d = clamp(t.x, 0.0, dToLight - dot(sray, sorigin - intersect));
         sorigin += d * sray;
         
         smallestDist = min(smallestDist, t.x);
