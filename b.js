@@ -128,8 +128,10 @@ var watch_drawCall;
 var shadertoy_uniforms_buf;
 
 var analyzer_mouse = [0, 0];
+var watch_mouse = [0, 0];
 var analyzer_data = null;
 var analyzer_clickable = [];
+var watch_clicked = 0;
 
 var shader_url = "sphere_marching.fs";
 
@@ -254,9 +256,10 @@ $("#analyzer_var").on('click', function(e) {
 $("#varVisualizer").on('mousemove', function(e) {
     var x = e.pageX - this.offsetLeft;
     var y = e.pageY - this.offsetTop;
+    watch_mouse = [x, y];
 
-    var best_score = 8000;
-    var best_id = 0;
+    var best_score = Math.pow(20, 2);
+    var best_id = watch_clicked;
     for (var i = 0; i < analyzer_clickable.length; ++i) {
         var score = Math.pow(analyzer_clickable[i][1] - x, 2) + Math.pow(analyzer_clickable[i][2] - y, 2);
         if (score < best_score) {
@@ -265,12 +268,8 @@ $("#varVisualizer").on('mousemove', function(e) {
         }
     }
 
-    var s = 'Iter ' + best_id + ': (' + 
-        analyzer_data[4 * best_id + 0] + ', ' +
-        analyzer_data[4 * best_id + 1] + ', ' +
-        analyzer_data[4 * best_id + 2] + ', ' +
-        analyzer_data[4 * best_id + 3] + ')';
-    $('#rawVisualizer').html(s);
+    watch_clicked = best_id;
+    drawGraph();
 })
 
 drawAll();
@@ -295,10 +294,10 @@ function drawGraphImp(ctx, data) {
     var hheight = (maxH - minH) / 2.0;
 
     function xPos(x) {
-        return (x - hwidth) * canvas.width / (2.0 * hwidth*1.2) + canvas.width/2.0;
+        return (x - hwidth) * ctx.canvas.width / (2.0 * hwidth*1.2) + ctx.canvas.width/2.0;
     }
     function yPos(y) {
-        return canvas.height - ( (y - hheight) * canvas.height /  (2.0 * (hheight+0.001)*1.2) + canvas.height/2.0 );
+        return ctx.canvas.height - ( (y - hheight) * ctx.canvas.height /  (2.0 * (hheight+0.001)*1.2) + ctx.canvas.height/2.0 );
     }
 
     ctx.beginPath();
@@ -343,4 +342,17 @@ function drawGraph()
     }
 
     analyzer_clickable = drawGraphImp(ctx, data);
+
+    ctx.beginPath();
+    ctx.strokeStyle = '#0a0';
+    ctx.moveTo(watch_mouse[0], watch_mouse[1]);
+    ctx.lineTo(analyzer_clickable[watch_clicked][1], analyzer_clickable[watch_clicked][2]);
+    ctx.stroke();
+
+    var s = 'Iter ' + watch_clicked + ': (' + 
+        analyzer_data[4 * watch_clicked + 0] + ', ' +
+        analyzer_data[4 * watch_clicked + 1] + ', ' +
+        analyzer_data[4 * watch_clicked + 2] + ', ' +
+        analyzer_data[4 * watch_clicked + 3] + ')';
+    $('#rawVisualizer').html(s);
 }
