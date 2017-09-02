@@ -35,7 +35,8 @@ var previewEntryPoint = `
 void main() {
 	vec2 fragCoord = gl_FragCoord.xy;
 
-	mainImage(outColor, fragCoord);
+    mainImage(outColor, fragCoord);
+    outColor.w = 1.;
 
 	if (abs(fragCoord.x - analyzer_mouse.x) < 2. ^^
 		abs(iResolution.y - fragCoord.y - analyzer_mouse.y) < 2.)
@@ -50,7 +51,7 @@ void main() {
 
 	mainImage(outColor, fragCoord);
 
-	outColor = analyzer_output; // + outColor*1.e-30;
+	outColor = analyzer_output;// + outColor*1.e-30;
 }`
 
 function loadVarWatchSource(linenum, name, components)
@@ -89,6 +90,7 @@ function reloadWatchShader()
 {
     if (watch_program != null)
         watch_program.delete();
+    console.log(window.getSelection().toString());
 
     if (window.getSelection().toString() == "") {
         watch_shader = fShader.replace("ENTRY_POINT_HERE", varWatchEntryPoint);
@@ -133,7 +135,7 @@ var analyzer_data = null;
 var analyzer_clickable = [];
 var watch_clicked = 0;
 
-var shader_url = "sphere_marching.fs";
+var shader_url = "voxel.fs";
 
 // Set up PicoGL and context
 var canvas = document.getElementById("preview");
@@ -177,7 +179,7 @@ shadertoy_uniforms_buf = app.createUniformBuffer([
     PicoGL.FLOAT,
     PicoGL.FLOAT_VEC4,
 ])
-.set(0, [300, 300])
+.set(0, [canvas.width, canvas.width])
 .set(1, 0)
 .set(2, [0,0,0,0])
 .update();
@@ -278,7 +280,7 @@ function drawGraphImp(ctx, data) {
     var canvas = ctx.canvas;
 
     var minH = 0;
-    var maxH = 0;
+    var maxH = 1;
     var maxInd = 0;
     for (var i = 0; i < data.length; ++i) {
         if (data[i][0] == 1337) {
@@ -289,17 +291,19 @@ function drawGraphImp(ctx, data) {
         minH = Math.min(minH, data[i][0]);
         maxH = Math.max(maxH, data[i][0]);
     }
-
-    var hwidth = (maxInd) / 2.0;
+    console.log(minH);
+    var hwidth = Math.max((maxInd-1) / 2.0, 1);
     var hheight = (maxH - minH) / 2.0;
 
     function xPos(x) {
         return (x - hwidth) * ctx.canvas.width / (2.0 * hwidth*1.2) + ctx.canvas.width/2.0;
     }
     function yPos(y) {
-        return ctx.canvas.height - ( (y - hheight) * ctx.canvas.height /  (2.0 * (hheight+0.001)*1.2) + ctx.canvas.height/2.0 );
+        return ctx.canvas.height - ( (y - hheight - minH) * ctx.canvas.height /  (2.0 * (hheight+0.001)*1.2) + ctx.canvas.height/2.0 );
     }
 
+    ctx.fillStyle = "#500";
+    ctx.globalAlpha = 0.5;
     ctx.beginPath();
     ctx.moveTo(xPos(0), yPos(0));
     for (var i = 0; i < maxInd; ++i) {
@@ -311,7 +315,9 @@ function drawGraphImp(ctx, data) {
 
     clickable = [];
 
-    ctx.fillStyle = "#f00";
+    //ctx.fillStyle = "#f00";
+    ctx.fillStyle = "#000";
+    ctx.globalAlpha = 1.0;
     for (var i = 0; i < maxInd; ++i) {
         var x = xPos(i);
         var y = yPos(data[i][0]);
@@ -342,6 +348,13 @@ function drawGraph()
     }
 
     analyzer_clickable = drawGraphImp(ctx, data);
+    if (analyzer_clickable == null)
+        return;
+    if (analyzer_clickable.length == 0)
+        return;
+    if (watch_clicked >= analyzer_clickable.length)
+        return;
+    //console.log(analyzer_clickable);
 
     ctx.beginPath();
     ctx.strokeStyle = '#0a0';
@@ -355,4 +368,22 @@ function drawGraph()
         analyzer_data[4 * watch_clicked + 2] + ', ' +
         analyzer_data[4 * watch_clicked + 3] + ')';
     $('#rawVisualizer').html(s);
+}
+
+// DEBUG SHIT
+if (true)
+{
+    watch_program.delete();
+    watch_shader = loadVarWatchSource(184, "float(normId)", 1);
+
+    watch_program = app.createProgram(vShader, watch_shader);
+
+    watch_drawCall = app.createDrawCall(watch_program, triangleArray)
+    .texture("iChannel0", iChannel0Tex)
+    .texture("iChannel1", iChannel0Tex)
+    .texture("iChannel2", iChannel0Tex)
+    .uniformBlock("shadertoy_uniforms", shadertoy_uniforms_buf)
+    .uniform("analyzer_mouse", [0,0]);
+
+    watch_drawCall.uniform("analyzer_mouse", analyzer_mouse);
 }
