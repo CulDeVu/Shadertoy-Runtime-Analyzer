@@ -126,21 +126,25 @@ vec3 findCenter(vec3 o)
     if (abs(parity.x - parity.y) < 0.5)
     {
         p.z += sgn(o.z - p.z);
-        return p;
     }
     if (abs(parity.x - parity.z) < 0.5)
     {
         p.y += sgn(o.y - p.y);
-        return p;
     }
     if (abs(parity.y - parity.z) < 0.5)
     {
         p.x += sgn(o.x - p.x);
-        return p;
     }
+
+    /*vec3 shift = vec3(sgn(o.x - p.x), sgn(o.y - p.y), sgn(o.z - p.z));
+    vec3 p2 = p + shift;
+
+    if (length(o - p) > length(o - p2))
+        return p2;
+    return p;*/
     
     // this shouldn't be possible
-    return vec3(0,0,0);
+    return p;
 }
 
 // This is just a modification of cube marching

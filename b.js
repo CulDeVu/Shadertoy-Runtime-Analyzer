@@ -82,7 +82,7 @@ function drawCode(source)
 	for (var i = 0; i < arr.length; ++i) {
 
 		var s = arr[i];
-		$("#code").append("<tr class='code-row-" + i + "'>  <td><pre>" + i + "</pre></td> <td><pre>" + s + "</pre></td>  </tr>");
+		$("#code").append("<tr class='code-row code-row-" + i + "' row='" + i + "'>  <td><pre>" + i + "</pre></td> <td><pre>" + s + "</pre></td>  </tr>");
 	}
 }
 
@@ -92,13 +92,24 @@ function reloadWatchShader()
         watch_program.delete();
     console.log(window.getSelection().toString());
 
-    if (window.getSelection().toString() == "") {
+    var selectionText = window.getSelection().toString();
+    var inputboxTex = $('#watch_text').val();
+
+    if (selectionText == "" && inputboxTex == "") {
         watch_shader = fShader.replace("ENTRY_POINT_HERE", varWatchEntryPoint);
     }
+    else if (selectionText == "") {
+        var compNum = parseInt($("#watch_compNum").val());
+        var linenum = parseInt($('.code-row-selected').first().attr('row'));
+        var name = inputboxTex;
+        console.log(linenum);
+
+        watch_shader = loadVarWatchSource(linenum + 1, name, compNum);
+    }
     else {
-        var compNum = parseInt($("#varWatch_component_num").val());
-        var linenum = parseInt($(window.getSelection().anchorNode).parents().eq(2).attr("class").split(' ')[0].substr(9, 1000));
-        var name = window.getSelection().toString();
+        var compNum = parseInt($("#watch_compNum").val());
+        var linenum = parseInt($(window.getSelection().anchorNode).parents().eq(2).attr("row"));
+        var name = selectionText;
 
         watch_shader = loadVarWatchSource(linenum + 1, name, compNum);
     }
@@ -273,57 +284,126 @@ $("#varVisualizer").on('mousemove', function(e) {
     watch_clicked = best_id;
     drawGraph();
 })
+$('.code-row').on('click', function(e) {
+    $('.code-row-selected').not(this).removeClass('code-row-selected');
+    $(this).toggleClass('code-row-selected');
+});
 
 drawAll();
 
-function drawGraphImp(ctx, data) {
+function drawGraphImp(ctx, data, mouse_clicked) {
     var canvas = ctx.canvas;
 
     var minH = 0;
     var maxH = 1;
     var maxInd = 0;
+    var hwidth, hheight;
+    clickable = [];
+
     for (var i = 0; i < data.length; ++i) {
         if (data[i][0] == 1337) {
             maxInd = i;
             break;
         }
-
-        minH = Math.min(minH, data[i][0]);
-        maxH = Math.max(maxH, data[i][0]);
     }
-    console.log(minH);
-    var hwidth = Math.max((maxInd-1) / 2.0, 1);
-    var hheight = (maxH - minH) / 2.0;
+
+    function findMin(comp) {
+        for (var i = 0; i < maxInd; ++i) {
+            minH = Math.min(minH, data[i][comp]);
+            maxH = Math.max(maxH, data[i][comp]);
+        }
+    }
 
     function xPos(x) {
-        return (x - hwidth) * ctx.canvas.width / (2.0 * hwidth*1.2) + ctx.canvas.width/2.0;
+        return (x - hwidth) * ctx.canvas.width / (2.0 * hwidth*1.1) + ctx.canvas.width/2.0;
     }
     function yPos(y) {
-        return ctx.canvas.height - ( (y - hheight - minH) * ctx.canvas.height /  (2.0 * (hheight+0.001)*1.2) + ctx.canvas.height/2.0 );
+        return ctx.canvas.height - ( (y - hheight - minH) * ctx.canvas.height /  (2.0 * (hheight+0.001)*1.1) + ctx.canvas.height/2.0 );
     }
 
-    ctx.fillStyle = "#500";
-    ctx.globalAlpha = 0.5;
-    ctx.beginPath();
-    ctx.moveTo(xPos(0), yPos(0));
-    for (var i = 0; i < maxInd; ++i) {
-        ctx.lineTo(xPos(i), yPos(data[i][0]));
+    function drawSingleComponent(comp, color) {
+        ctx.fillStyle = color;
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.beginPath();
+        ctx.moveTo(xPos(0), yPos(0));
+        for (var i = 0; i < maxInd; ++i) {
+            var x = xPos(i);
+            var y = yPos(data[i][comp]);
+            ctx.lineTo(xPos(i), yPos(data[i][comp]));
+            clickable.push([ i, x, y ]);
+        }
+        ctx.lineTo(xPos(maxInd-1), yPos(0));
+        ctx.closePath();
+        ctx.fill();
     }
-    ctx.lineTo(xPos(maxInd-1), yPos(0));
-    ctx.closePath();
-    ctx.fill();
-
-    clickable = [];
-
-    //ctx.fillStyle = "#f00";
-    ctx.fillStyle = "#000";
-    ctx.globalAlpha = 1.0;
-    for (var i = 0; i < maxInd; ++i) {
-        var x = xPos(i);
-        var y = yPos(data[i][0]);
-        ctx.fillRect(x - 3, y - 3, 6, 6);
-        clickable.push([ i, x, y ]);
+    function draw2(comp, color) {
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.moveTo(xPos(0), yPos(data[0][comp]));
+        for (var i = 1; i < maxInd; ++i) {
+            ctx.lineTo(xPos(i), yPos(data[i][comp]));
+        }
+        ctx.stroke();
+    
+        //ctx.fillStyle = "#f00";
+        ctx.strokeStyle = color;
+        ctx.fillStyle = "#fff";
+        ctx.globalCompositeOperation = 'source-over';
+        for (var i = 0; i < maxInd; ++i) {
+            var x = xPos(i);
+            var y = yPos(data[i][comp]);
+            ctx.fillRect(x - 3, y - 3, 6, 6);
+            ctx.strokeRect(x - 3, y - 3, 6, 6);
+        }
     }
+    function addToClickable(comp) {
+        for (var i = 0; i < maxInd; ++i) {
+            var x = xPos(i);
+            var y = yPos(data[i][comp]);
+            clickable.push([ i, x, y ]);
+        }
+    }
+
+    findMin(0);
+    if (data[0][1] != 1337) findMin(1);
+    if (data[0][2] != 1337) findMin(2);
+
+    hwidth = Math.max((maxInd-1) / 2.0, 1);
+    hheight = (maxH - minH) / 2.0;
+
+    {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.beginPath();
+        ctx.moveTo(xPos(0), yPos(0));
+        ctx.lineTo(xPos(maxInd - 1), yPos(0));
+        ctx.stroke();
+    }
+
+    addToClickable(0);
+    addToClickable(1);
+    addToClickable(2);
+
+    /*drawSingleComponent(0, '#900');
+    if (data[0][1] != 1337)
+        drawSingleComponent(1, '#090');
+    if (data[0][2] != 1337)
+        drawSingleComponent(2, '#00b');*/
+
+    if (0 <= mouse_clicked && mouse_clicked < clickable.length)
+    {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.beginPath();
+        ctx.moveTo(xPos(clickable[mouse_clicked][0]), yPos(maxH));
+        ctx.lineTo(xPos(clickable[mouse_clicked][0]), yPos(minH));
+        ctx.stroke();
+    }
+
+    draw2(0, '#900');
+    if (data[0][1] != 1337)
+        draw2(1, '#090');
+    if (data[0][2] != 1337)
+        draw2(2, '#009');
 
     return clickable;
 }
@@ -347,7 +427,7 @@ function drawGraph()
         ]);
     }
 
-    analyzer_clickable = drawGraphImp(ctx, data);
+    analyzer_clickable = drawGraphImp(ctx, data, watch_clicked);
     if (analyzer_clickable == null)
         return;
     if (analyzer_clickable.length == 0)
@@ -356,17 +436,18 @@ function drawGraph()
         return;
     //console.log(analyzer_clickable);
 
-    ctx.beginPath();
+    /*ctx.beginPath();
     ctx.strokeStyle = '#0a0';
     ctx.moveTo(watch_mouse[0], watch_mouse[1]);
     ctx.lineTo(analyzer_clickable[watch_clicked][1], analyzer_clickable[watch_clicked][2]);
-    ctx.stroke();
+    ctx.stroke();*/
+    var clicked_id = analyzer_clickable[watch_clicked][0];
 
-    var s = 'Iter ' + watch_clicked + ': (' + 
-        analyzer_data[4 * watch_clicked + 0] + ', ' +
-        analyzer_data[4 * watch_clicked + 1] + ', ' +
-        analyzer_data[4 * watch_clicked + 2] + ', ' +
-        analyzer_data[4 * watch_clicked + 3] + ')';
+    var s = 'Iter ' + clicked_id + ': (' + 
+        analyzer_data[4 * clicked_id + 0] + ', ' +
+        analyzer_data[4 * clicked_id + 1] + ', ' +
+        analyzer_data[4 * clicked_id + 2] + ', ' +
+        analyzer_data[4 * clicked_id + 3] + ')';
     $('#rawVisualizer').html(s);
 }
 
@@ -374,7 +455,7 @@ function drawGraph()
 if (true)
 {
     watch_program.delete();
-    watch_shader = loadVarWatchSource(184, "float(normId)", 1);
+    watch_shader = loadVarWatchSource(195, "center", 3);
 
     watch_program = app.createProgram(vShader, watch_shader);
 
