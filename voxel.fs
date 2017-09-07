@@ -29,19 +29,6 @@ void round1(inout vec3 r)
     r.xyz = floor(r.xyz + 0.5);
 }
 
-// Determines which cells are solid based on their centers
-bool isSolid(vec3 center)
-{
-    if (center.y <= 0.)
-        return true;
-    if (length(center) < 8.)
-        return true;
-    if (abs(center.z) < 2. && abs(length(center.xy) - 20.) < 5.)
-        return true;
-    
-    return false;
-}
-
 //---------------------------------------------------
 // Intersection and tracing code
 //---------------------------------------------------
@@ -89,6 +76,46 @@ float truncOctInner(vec3 p, vec3 ray, out int best_norm)
     }
     
     return best_d;
+}
+
+// Determines which cells are solid based on their centers
+bool isSolid(vec3 center)
+{
+    /*if (center.y <= 0.)
+        return true;
+    if (length(center) < 8.)
+        return true;
+    if (abs(center.z) < 2. && abs(length(center.xy) - 20.) < 5.)
+        return true;
+    
+    return false;*/
+
+    float best_d = 1000.0;
+    
+    vec3 offset, n;
+    float d;
+    bool b = true;
+    
+    for (int i = 0; i < 7; ++i)
+    {
+        offset = 50. * Fv[i];
+        n = normalize(offset);
+        d = dot(center - offset, n);
+        if (d > 0.)
+        {
+            b = false;
+        }
+        
+        offset = -50. * Fv[i];
+        n = normalize(offset);
+        d = dot(center - offset, n);
+        if (d > 0.)
+        {
+            b = false;
+        }
+    }
+    
+    return b;
 }
 
 /* this is an improved findCenter function (much better than the more
@@ -226,7 +253,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     float mouseU = 2. * (iMouse.x / iResolution.x - 0.5);
     vec3 trash;
     
-    vec3 cam = vec3(0,8,20);
+    vec3 cam = vec3(0,8,80);
     vec3 screenPos = vec3(uv, -0.5);
     
     pR(cam.xz, mouseU * 2. * PI);
@@ -256,7 +283,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         ambient = ao/3. + 0.05;*/
     
     // Lighting
-    vec3 light = 10. * vec3(sin(iTime), 1, cos(iTime));
+    vec3 light = 80. * vec3(sin(iTime), 1, cos(iTime));
     vec3 lightDir = pt - light;
     float lightIntensity = 10.0;
     

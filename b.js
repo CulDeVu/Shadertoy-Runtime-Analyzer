@@ -90,26 +90,17 @@ function reloadWatchShader()
 {
     if (watch_program != null)
         watch_program.delete();
-    console.log(window.getSelection().toString());
 
-    var selectionText = window.getSelection().toString();
     var inputboxTex = $('#watch_text').val();
 
-    if (selectionText == "" && inputboxTex == "") {
+    if (inputboxTex == "") {
         watch_shader = fShader.replace("ENTRY_POINT_HERE", varWatchEntryPoint);
     }
-    else if (selectionText == "") {
+    else {
         var compNum = parseInt($("#watch_compNum").val());
         var linenum = parseInt($('.code-row-selected').first().attr('row'));
         var name = inputboxTex;
         console.log(linenum);
-
-        watch_shader = loadVarWatchSource(linenum + 1, name, compNum);
-    }
-    else {
-        var compNum = parseInt($("#watch_compNum").val());
-        var linenum = parseInt($(window.getSelection().anchorNode).parents().eq(2).attr("row"));
-        var name = selectionText;
 
         watch_shader = loadVarWatchSource(linenum + 1, name, compNum);
     }
@@ -146,7 +137,7 @@ var analyzer_data = null;
 var analyzer_clickable = [];
 var watch_clicked = 0;
 
-var shader_url = "voxel.fs";
+var shader_url = "sphere_marching.fs";
 
 // Set up PicoGL and context
 var canvas = document.getElementById("preview");
@@ -321,25 +312,9 @@ function drawGraphImp(ctx, data, mouse_clicked) {
         return ctx.canvas.height - ( (y - hheight - minH) * ctx.canvas.height /  (2.0 * (hheight+0.001)*1.1) + ctx.canvas.height/2.0 );
     }
 
-    function drawSingleComponent(comp, color) {
-        ctx.fillStyle = color;
-        ctx.globalCompositeOperation = 'lighter';
-        ctx.beginPath();
-        ctx.moveTo(xPos(0), yPos(0));
-        for (var i = 0; i < maxInd; ++i) {
-            var x = xPos(i);
-            var y = yPos(data[i][comp]);
-            ctx.lineTo(xPos(i), yPos(data[i][comp]));
-            clickable.push([ i, x, y ]);
-        }
-        ctx.lineTo(xPos(maxInd-1), yPos(0));
-        ctx.closePath();
-        ctx.fill();
-    }
-    function draw2(comp, color) {
+    function drawComponent(comp, color) {
         ctx.beginPath();
         ctx.strokeStyle = color;
-        ctx.globalCompositeOperation = 'source-over';
         ctx.moveTo(xPos(0), yPos(data[0][comp]));
         for (var i = 1; i < maxInd; ++i) {
             ctx.lineTo(xPos(i), yPos(data[i][comp]));
@@ -349,7 +324,6 @@ function drawGraphImp(ctx, data, mouse_clicked) {
         //ctx.fillStyle = "#f00";
         ctx.strokeStyle = color;
         ctx.fillStyle = "#fff";
-        ctx.globalCompositeOperation = 'source-over';
         for (var i = 0; i < maxInd; ++i) {
             var x = xPos(i);
             var y = yPos(data[i][comp]);
@@ -365,45 +339,36 @@ function drawGraphImp(ctx, data, mouse_clicked) {
         }
     }
 
-    findMin(0);
+    if (data[0][0] != 1337) findMin(0);
     if (data[0][1] != 1337) findMin(1);
     if (data[0][2] != 1337) findMin(2);
 
     hwidth = Math.max((maxInd-1) / 2.0, 1);
     hheight = (maxH - minH) / 2.0;
 
+    // 
     {
-        ctx.globalCompositeOperation = 'source-over';
         ctx.beginPath();
         ctx.moveTo(xPos(0), yPos(0));
         ctx.lineTo(xPos(maxInd - 1), yPos(0));
         ctx.stroke();
     }
 
-    addToClickable(0);
-    addToClickable(1);
-    addToClickable(2);
-
-    /*drawSingleComponent(0, '#900');
-    if (data[0][1] != 1337)
-        drawSingleComponent(1, '#090');
-    if (data[0][2] != 1337)
-        drawSingleComponent(2, '#00b');*/
+    if (data[0][0] != 1337) addToClickable(0);
+    if (data[0][1] != 1337) addToClickable(1);
+    if (data[0][2] != 1337) addToClickable(2);
 
     if (0 <= mouse_clicked && mouse_clicked < clickable.length)
     {
-        ctx.globalCompositeOperation = 'source-over';
         ctx.beginPath();
         ctx.moveTo(xPos(clickable[mouse_clicked][0]), yPos(maxH));
         ctx.lineTo(xPos(clickable[mouse_clicked][0]), yPos(minH));
         ctx.stroke();
     }
 
-    draw2(0, '#900');
-    if (data[0][1] != 1337)
-        draw2(1, '#090');
-    if (data[0][2] != 1337)
-        draw2(2, '#009');
+    if (data[0][0] != 1337) drawComponent(0, '#900');
+    if (data[0][1] != 1337) drawComponent(1, '#090');
+    if (data[0][2] != 1337) drawComponent(2, '#009');
 
     return clickable;
 }
@@ -434,13 +399,7 @@ function drawGraph()
         return;
     if (watch_clicked >= analyzer_clickable.length)
         return;
-    //console.log(analyzer_clickable);
 
-    /*ctx.beginPath();
-    ctx.strokeStyle = '#0a0';
-    ctx.moveTo(watch_mouse[0], watch_mouse[1]);
-    ctx.lineTo(analyzer_clickable[watch_clicked][1], analyzer_clickable[watch_clicked][2]);
-    ctx.stroke();*/
     var clicked_id = analyzer_clickable[watch_clicked][0];
 
     var s = 'Iter ' + clicked_id + ': (' + 
@@ -452,10 +411,10 @@ function drawGraph()
 }
 
 // DEBUG SHIT
-if (true)
+if (false)
 {
     watch_program.delete();
-    watch_shader = loadVarWatchSource(195, "center", 3);
+    watch_shader = loadVarWatchSource(224, "center", 3);
 
     watch_program = app.createProgram(vShader, watch_shader);
 
